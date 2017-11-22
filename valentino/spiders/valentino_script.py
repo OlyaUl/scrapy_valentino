@@ -1,5 +1,7 @@
 import scrapy
-from valentino.items import ValentinoProduct
+from datetime import date
+
+from valentino.items import ValentinoProduct, ValentinoPrice
 
 
 class MySpider(scrapy.Spider):
@@ -8,55 +10,82 @@ class MySpider(scrapy.Spider):
     # start_urls = ['https://www.valentino.com']
     custom_settings = []
 
-    def __init__(self, url="https://www.valentino.com/", *args, **kwargs):
+    def __init__(self, url='https://www.valentino.com/ua/shop/для-женщин/прет-а-порте/', *args, **kwargs):
         self.url = url
         super(MySpider, self).__init__(MySpider, *args, **kwargs)
+        self.url = url
+
 
     def start_requests(self):
-        yield scrapy.Request(url=self.url, callback=self.parse)
-
-    def parse(self, response):
-        search_url = "https://www.valentino.com/{}".format('ua/shop/для-женщин/прет-а-порте/')
-        # response
-        yield scrapy.Request(url=search_url, callback=get_categories,
-                             dont_filter=True,
+        yield scrapy.Request(url=self.url,
+                             callback=self.get_categories,
                              headers={'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 '
-                                                    '(KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36'},
-                             meta={'categories': []})
+                                                    '(KHTML, like Gecko) Chrome/57.0.2987.133 Safari/537.36'},)
 
+    def get_categories(self, response):
+        categories = response.xpath('//ul[@class="level-2"]/li[@id="donna_categories_abbigliamento"]/'
+                                    'ul[@class="level-3"]/li/a')
+        for category in categories:
+            meta = {}
+            id = 0
+            url_cat = category.xpath('@href').extract_first()
+            name_cat = category.xpath('span/text()').extract_first()
+            print(name_cat)
+            meta['categories'] = name_cat
+            yield scrapy.Request(
+                url=url_cat,
+                callback=self.get_items,
+                meta=meta
+            )
 
-def get_categories(response):
-    categories = response.xpath('//ul[@class="level-2"]/li[@id="donna_categories_abbigliamento"]/'
-                                'ul[@class="level-3"]/li/a')
-    for category in categories:
-        url_cat = category.xpath('@href').extract_first()
-        name_cat = category.xpath('span/text()').extract_first()
-        print(name_cat)
-        response.meta['categories'].append(name_cat)
-        # prod = ValentinoProduct()
-        # prod.categories = category_name
-        yield scrapy.Request(
-            url=url_cat,
-            callback=get_items,
-            meta={
-                'categories': response.meta['categories'],
-            }
-        )
+    def get_items(self, response):
+        items = response.xpath('//ul[@class="products "]/li[@class="item "]/article/div[@class="search-item-info"]/span/a')        #print(items)
+        i = 0
+        for item in items:
+            i = i+1
+            url = item.xpath('@href').extract_first()
+            yield scrapy.Request(
+                url=url,
+                callback=self.get_item, meta=response.meta)
 
+    def get_item(self, response):
+        product = ValentinoProduct()
+        price = ValentinoPrice()
+        product['name'] = response.xpath(
+            '//h1[@class="item-name"]/div/span[@class="value"]/text()'
+        ).extract_first()#.strip()
+        print(product['name'])
 
-def get_items(response):
-    # print(response.body)
-    items = response.xpath('//section[@class="search"]/ul[@class="products"]/li[@class="item"]/'
-                           'article[@class="search-item"]/header/a')
-    print(items)
-    for item in items:
-        print(item)
-        url = item.xpath('@href').extract_first()
-        name = item.xpath('title').extract_first()
-        print(name, url)
-        yield scrapy.Request(
-            url=url,
-            callback=get_items)
+        #product['site_product_id'] = response.id
 
+        product['model'] = response.xpath(
+            '//div[@class="modelName outer"]/span[@class="inner modelName"]/text()'
+        ).extract_first()  # .strip()
 
+        product['category'] = response.meta['categories']
 
+        product['description'] = response.xpath(
+            '//div[@class="attributesUpdater editorialdescription "]/span[@class="value"]'
+        ).extract_first()  # .strip()
+        print(product['description'])
+
+        product['url'] = response.url
+        #
+        product['image'] = response.xpath(
+            '//div[@class="slick-track"]/li[1]/img/@src'
+        ).extract_first()  # .strip()
+
+        product['site'] = 'https://www.valentino.com/'
+        print(product)
+        yield product
+
+        price['currency'] = '€'
+
+        price['params'] = {
+            'price': response.xpath(
+                '//div[@class="priceUpdater"]/span/span[class="value"]/text()'
+            ).extract(),
+            'size': response.xpath('//div[@class="item-sizeSelection "]/div/ul/li/span/text()').extract_first(),
+        }
+        print(price)
+        yield price
