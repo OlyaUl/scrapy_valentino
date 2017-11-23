@@ -10,9 +10,13 @@ class MySpider(scrapy.Spider):
     # start_urls = ['https://www.valentino.com']
     custom_settings = []
 
-    def __init__(self, url='https://www.valentino.com/ua/shop/для-женщин/прет-а-порте/', *args, **kwargs):
+    '''def __init__(self, url='https://www.valentino.com/ua/shop/для-женщин/прет-а-порте/', *args, **kwargs):
         self.url = url
         super(MySpider, self).__init__(MySpider, *args, **kwargs)
+        self.url = url'''
+
+    def __init__(self, url="https://www.valentino.com/", *args, **kwargs):
+        super(MySpider, self).__init__(*args, **kwargs)
         self.url = url
 
 
@@ -56,7 +60,7 @@ class MySpider(scrapy.Spider):
         ).extract_first()#.strip()
         print(product['name'])
 
-        #product['site_product_id'] = response.id
+        # product['site_product_id'] = response.id
 
         product['model'] = response.xpath(
             '//div[@class="modelName outer"]/span[@class="inner modelName"]/text()'
@@ -70,22 +74,27 @@ class MySpider(scrapy.Spider):
         print(product['description'])
 
         product['url'] = response.url
-        #
-        product['image'] = response.xpath(
-            '//div[@class="slick-track"]/li[1]/img/@src'
-        ).extract_first()  # .strip()
+
+        product['image'] = response.css('div.mainImage ul.alternativeImages img::attr(srcset)').extract()
 
         product['site'] = 'https://www.valentino.com/'
         print(product)
         yield product
 
         price['currency'] = '€'
-
+        price1 = response.xpath('//div[@class="item-price"]//span[@class="price"]/'
+                               'span[@class="value"]/text()').extract_first()
+        if not price1:
+            price1 = response.xpath('//div[@class="item-price"]//span[@class="full price"]/'
+                                   'span[@class="value"]/text()').extract_first()
+        sale_price1 = response.xpath('//div[@class="item-price"]//span[@class="discounted price"]'
+                                    '/span[@class="value"]/text()').extract_first()
+        size1 = response.css('div.item-sizeSelection span.sizeValue::text').extract()
         price['params'] = {
-            'price': response.xpath(
-                '//div[@class="priceUpdater"]/span/span[class="value"]/text()'
-            ).extract(),
-            'size': response.xpath('//div[@class="item-sizeSelection "]/div/ul/li/span/text()').extract_first(),
+            'price' :price1,
+            'size': size1,
+            'sale_price': sale_price1
+
         }
         print(price)
         yield price
