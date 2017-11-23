@@ -9,6 +9,7 @@ from .tasks import save
 
 class ValentinoPipeline(object):
     def process_item(self, item, spider):
-        save(item)
+        # save.delay(dict(item))
+        save.delay(item._values)
 
         return item

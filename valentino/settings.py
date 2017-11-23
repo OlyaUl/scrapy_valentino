@@ -15,6 +15,14 @@ SPIDER_MODULES = ['valentino.spiders']
 NEWSPIDER_MODULE = 'valentino.spiders'
 
 
+SCHEDULER = "scrapy_redis.scheduler.Scheduler"
+# Ensure all spiders share same duplicates filter through redis.
+DUPEFILTER_CLASS = "scrapy_redis.dupefilter.RFPDupeFilter"
+ITEM_PIPELINES = {
+    'scrapy_redis.pipelines.RedisPipeline': 300,
+    'valentino.pipelines.ValentinoPipeline': 300,
+}
+
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
 #USER_AGENT = 'valentino (+http://www.yourdomain.com)'
 
