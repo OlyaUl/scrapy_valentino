@@ -34,7 +34,7 @@ class MySpider(scrapy.Spider):
             id = 0
             url_cat = category.xpath('@href').extract_first()
             name_cat = category.xpath('span/text()').extract_first()
-            print(name_cat)
+            # print(name_cat)
             meta['categories'] = name_cat
             yield scrapy.Request(
                 url=url_cat,
@@ -58,7 +58,7 @@ class MySpider(scrapy.Spider):
         product['name'] = response.xpath(
             '//h1[@class="item-name"]/div/span[@class="value"]/text()'
         ).extract_first()#.strip()
-        print(product['name'])
+        # print(product['name'])
 
         # product['site_product_id'] = response.id
 
@@ -71,15 +71,17 @@ class MySpider(scrapy.Spider):
         product['description'] = response.xpath(
             '//div[@class="attributesUpdater editorialdescription "]/span[@class="value"]'
         ).extract_first()  # .strip()
-        print(product['description'])
+        # print(product['description'])
 
         product['url'] = response.url
 
         product['image'] = response.css('div.mainImage ul.alternativeImages img::attr(srcset)').extract()
 
         product['site'] = 'https://www.valentino.com/'
-        print(product)
+        # print(product)
         yield product
+
+        price['date'] = date.today()
 
         price['currency'] = '€'
         price1 = response.xpath('//div[@class="item-price"]//span[@class="price"]/'
@@ -96,5 +98,5 @@ class MySpider(scrapy.Spider):
             'sale_price': sale_price1
 
         }
-        print(price)
+        # print(price)
         yield price

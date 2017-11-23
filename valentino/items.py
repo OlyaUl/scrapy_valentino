@@ -29,6 +29,7 @@ class ValentinoProduct(scrapy.Item):
 
 class ValentinoPrice(scrapy.Item):
     site_product_id = scrapy.Field()
+    date = scrapy.Field()
     params = scrapy.Field()
     stock = scrapy.Field()
     currency = scrapy.Field()
